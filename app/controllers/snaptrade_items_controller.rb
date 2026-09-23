@@ -95,7 +95,7 @@ class SnaptradeItemsController < ApplicationController
     latest_sync = @snaptrade_item.syncs.ordered.first
     should_sync = latest_sync.nil? || !latest_sync.completed?
 
-    if @snaptrade_item.oauth_configured? && no_accounts && !@snaptrade_item.syncing? && should_sync
+    if @snaptrade_item.credentials_configured? && no_accounts && !@snaptrade_item.syncing? && should_sync
       @snaptrade_item.sync_later
     end
 
@@ -209,7 +209,7 @@ class SnaptradeItemsController < ApplicationController
     snaptrade_item = if params[:item_id].present?
       Current.family.snaptrade_items.find(params[:item_id])
     else
-      current_snaptrade_item || Current.family.snaptrade_items.create!(name: t("snaptrade_items.default_name"))
+      Current.family.snaptrade_items.active.oauth_connections.ordered.first || Current.family.snaptrade_items.create!(name: t("snaptrade_items.default_name"))
     end
 
     pkce = Provider::Snaptrade.generate_pkce
@@ -287,7 +287,7 @@ class SnaptradeItemsController < ApplicationController
     @snaptrade_item = if params[:item_id].present?
       Current.family.snaptrade_items.find(params[:item_id])
     else
-      current_snaptrade_item
+      Current.family.snaptrade_items.active.oauth_connections.ordered.first
     end
 
     render :oauth_device_flow
@@ -301,7 +301,7 @@ class SnaptradeItemsController < ApplicationController
     @snaptrade_item = if params[:item_id].present?
       Current.family.snaptrade_items.find(params[:item_id])
     else
-      current_snaptrade_item || Current.family.snaptrade_items.create!(name: t("snaptrade_items.default_name"))
+      Current.family.snaptrade_items.active.oauth_connections.ordered.first || Current.family.snaptrade_items.create!(name: t("snaptrade_items.default_name"))
     end
 
     @device_authorization = @snaptrade_item.start_oauth_device_flow(scope: @oauth_scope)
@@ -428,7 +428,7 @@ class SnaptradeItemsController < ApplicationController
       return
     end
 
-    if snaptrade_item.oauth_configured?
+    if snaptrade_item.credentials_configured?
       snaptrade_item.sync_later_with_follow_up
       redirect_to setup_accounts_snaptrade_item_path(snaptrade_item)
     else
@@ -446,7 +446,7 @@ class SnaptradeItemsController < ApplicationController
       return
     end
 
-    if snaptrade_item.oauth_configured?
+    if snaptrade_item.credentials_configured?
       redirect_to setup_accounts_snaptrade_item_path(snaptrade_item, accountable_type: @accountable_type, return_to: @return_to)
     else
       redirect_to helpers.snaptrade_authorize_path(item_id: snaptrade_item.id, accountable_type: @accountable_type, return_to: @return_to)

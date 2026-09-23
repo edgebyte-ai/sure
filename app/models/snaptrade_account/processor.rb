@@ -74,7 +74,7 @@ class SnaptradeAccount::Processor
 
     def calculate_total_balance
       if use_api_total_balance?
-        Rails.logger.debug "SnaptradeAccount::Processor - Using API total for multi-currency holdings for snaptrade_account=#{snaptrade_account.id}"
+        Rails.logger.debug "SnaptradeAccount::Processor - Using API account total for snaptrade_account=#{snaptrade_account.id}"
         return snaptrade_account.current_balance || 0
       end
 
@@ -162,6 +162,10 @@ class SnaptradeAccount::Processor
 
     def use_api_total_balance?
       return false unless snaptrade_account.current_balance.present?
+
+      # Moomoo's positions can omit markets included in its account total,
+      # even when every returned position has the account's currency.
+      return true if snaptrade_account.brokerage_name.to_s.casecmp?("Moomoo")
 
       holdings_currencies.any? { |currency| currency.present? && currency != snaptrade_account.currency }
     end

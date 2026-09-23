@@ -6,6 +6,7 @@ module SnaptradeItem::Provided
   end
 
   def snaptrade_provider
+    return Provider::Snaptrade2.new(self) if api_configured?
     return nil unless oauth_configured?
 
     Provider::Snaptrade.new(self)

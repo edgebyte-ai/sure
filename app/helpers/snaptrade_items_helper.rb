@@ -7,6 +7,10 @@ module SnaptradeItemsHelper
   # needs only the public client id. Prefer the redirect when it is available,
   # since it is the shorter path for the user.
   def snaptrade_authorize_path(item_id: nil, accountable_type: nil, return_to: nil)
+    if item_id.present? && Current.family.snaptrade_items.api_connections.exists?(id: item_id)
+      return connect_form_settings_providers_path(provider_key: "snaptrade2")
+    end
+
     query = {
       item_id: item_id.presence,
       accountable_type: accountable_type.presence,

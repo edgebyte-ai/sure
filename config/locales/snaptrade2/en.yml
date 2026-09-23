@@ -1,0 +1,17 @@
+en:
+  snaptrade2:
+    client_id: Client ID
+    consumer_key: Consumer Key
+    snaptrade_user_id: User ID
+    snaptrade_user_secret: User Secret
+    unchanged: Leave blank to keep unchanged
+    save: Save and connect
+    update: Update credentials
+    accounts: Set up accounts
+    connect: Connect brokerage
+    sync: Sync
+    saved: SnapTrade API connected.
+    missing_credentials: All four API credentials are required.
+    encryption_required: Configure persistent Active Record encryption keys before saving API credentials.
+    identity_changed: Create a separate connection to use a different Client ID or User ID.
+    connection_failed: Could not connect to SnapTrade API. Check your credentials and try again.

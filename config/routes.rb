@@ -162,6 +162,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :snaptrade2_items, only: [ :create, :update ]
+
   resources :snaptrade_items, only: [ :index, :show, :destroy ] do
     collection do
       get :preload_accounts

@@ -101,6 +101,8 @@ class Settings::ProvidersController < ApplicationController
     return redirect_to settings_providers_path unless syncable_type
 
     items = syncable_type.constantize.where(family: Current.family).syncable
+    items = items.api_connections if provider_key == "snaptrade2"
+    items = items.oauth_connections if provider_key == "snaptrade"
     scheduled = items.reject(&:syncing?)
     scheduled.each(&:sync_later)
 
@@ -206,6 +208,7 @@ class Settings::ProvidersController < ApplicationController
       { key: "coinspot",       title: "CoinSpot",        turbo_id: "coinspot",       partial: "coinspot_panel" },
       { key: "onchain_wallet", title: "On-chain wallets", turbo_id: "onchain_wallet", partial: "onchain_wallet_panel" },
       { key: "snaptrade",      title: "SnapTrade",       turbo_id: "snaptrade",      partial: "snaptrade_panel", auto_open: "manage" },
+      { key: "snaptrade2",     title: "SnapTrade API",   turbo_id: "snaptrade2",     partial: "snaptrade2_panel" },
       { key: "ibkr",           title: "Interactive Brokers", turbo_id: "ibkr",      partial: "ibkr_panel" },
       { key: "trading212",     title: "Trading 212",     turbo_id: "trading212", partial: "trading212_panel" },
       { key: "trade_republic", title: "Trade Republic",  turbo_id: "trade-republic", partial: "trade_republic_panel" },
@@ -236,6 +239,7 @@ class Settings::ProvidersController < ApplicationController
       "coinspot"       => "CoinspotItem",
       "onchain_wallet" => "OnchainWalletItem",
       "snaptrade"      => "SnaptradeItem",
+      "snaptrade2"     => "SnaptradeItem",
       "questrade"      => "QuestradeItem",
       "ibkr"           => "IbkrItem",
       "trading212"     => "Trading212Item",
@@ -281,7 +285,9 @@ class Settings::ProvidersController < ApplicationController
       when "onchain_wallet"
         @onchain_wallet_items = Current.family.onchain_wallet_items.active.ordered
       when "snaptrade"
-        @snaptrade_items = Current.family.snaptrade_items.includes(:snaptrade_accounts).ordered
+        @snaptrade_items = Current.family.snaptrade_items.oauth_connections.includes(:snaptrade_accounts).ordered
+      when "snaptrade2"
+        @snaptrade2_items = Current.family.snaptrade_items.active.api_connections.ordered
       when "ibkr"
         @ibkr_items = Current.family.ibkr_items.ordered
       when "trading212"
@@ -320,7 +326,8 @@ class Settings::ProvidersController < ApplicationController
       @mercury_items = Current.family.mercury_items.active.ordered
       @brex_items = Current.family.brex_items.active.ordered
       @coinbase_items = Current.family.coinbase_items.ordered # Coinbase panel needs name and sync info for status display
-      @snaptrade_items = Current.family.snaptrade_items.ordered
+      @snaptrade_items = Current.family.snaptrade_items.oauth_connections.ordered
+      @snaptrade2_items = Current.family.snaptrade_items.active.api_connections.ordered
       @ibkr_items = Current.family.ibkr_items.ordered.select(:id)
       @trading212_items = Current.family.trading212_items.ordered
       @trade_republic_items = Current.family.trade_republic_items.ordered.select(:id)
@@ -366,6 +373,7 @@ class Settings::ProvidersController < ApplicationController
         "coinspot"       => @coinspot_items,
         "onchain_wallet" => @onchain_wallet_items,
         "snaptrade"      => @snaptrade_items,
+        "snaptrade2"     => @snaptrade2_items,
         "questrade"      => @questrade_items,
         "ibkr"           => @ibkr_items,
         "trading212"     => @trading212_items,

@@ -33,10 +33,17 @@ class SnaptradeItem < ApplicationRecord
   has_many :linked_accounts, through: :snaptrade_accounts
 
   scope :active, -> { where(scheduled_for_deletion: false) }
-  # Syncable = active + authorized via OAuth (has an access token).
+  # Both OAuth tokens and complete partner API credentials can authorize sync.
   # oauth_access_token is non-deterministically encrypted, so it can only be
   # queried with an IS NULL check (never persisted as "" -- see apply_oauth_tokens!).
-  scope :syncable, -> { active.where.not(oauth_access_token: nil) }
+  scope :api_connections, -> { where(oauth_access_token: nil).where.not(consumer_key: nil) }
+  scope :oauth_connections, -> { where(consumer_key: nil).or(where.not(oauth_access_token: nil)) }
+  scope :syncable, -> {
+    active.where.not(oauth_access_token: nil).or(
+      active.where.not(client_id: nil).where.not(consumer_key: nil)
+        .where.not(snaptrade_user_id: [ nil, "" ]).where.not(snaptrade_user_secret: nil)
+    )
+  }
   scope :ordered, -> { order(created_at: :desc) }
   scope :needs_update, -> { where(status: :requires_update) }
 
@@ -180,10 +187,16 @@ class SnaptradeItem < ApplicationRecord
   def oauth_configured?
     oauth_access_token.present?
   end
-  alias_method :credentials_configured?, :oauth_configured?
+  def api_configured?
+    !oauth_configured? && [ client_id, consumer_key, snaptrade_user_id, snaptrade_user_secret ].all?(&:present?)
+  end
+
+  def credentials_configured?
+    oauth_configured? || api_configured?
+  end
 
   def fully_configured?
-    oauth_configured?
+    credentials_configured?
   end
 
   # Override Syncable#syncing? to also show syncing state when activities are being

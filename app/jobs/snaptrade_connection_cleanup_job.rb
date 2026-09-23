@@ -23,6 +23,9 @@ class SnaptradeConnectionCleanupJob < ApplicationJob
       return
     end
 
+    # API credentials may share connections with other apps (e.g. personal-finance).
+    return if snaptrade_item.api_configured?
+
     # Check if other accounts still use this authorization
     if snaptrade_item.snaptrade_accounts.where(snaptrade_authorization_id: authorization_id).exists?
       Rails.logger.info(

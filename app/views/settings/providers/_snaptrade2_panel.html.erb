@@ -1,0 +1,28 @@
+<div class="space-y-4">
+  <% items = @snaptrade2_items || Current.family.snaptrade_items.active.api_connections.ordered %>
+  <% item = items.first || Current.family.snaptrade_items.new %>
+  <%= styled_form_with model: item, scope: :snaptrade_item,
+                       url: item.persisted? ? snaptrade2_item_path(item) : snaptrade2_items_path,
+                       method: item.persisted? ? :patch : :post,
+                       data: { turbo_frame: "_top" }, class: "space-y-3" do |form| %>
+    <% %i[client_id consumer_key snaptrade_user_id snaptrade_user_secret].each do |field| %>
+      <%= form.text_field field, label: t("snaptrade2.#{field}"),
+                          type: %i[consumer_key snaptrade_user_secret].include?(field) ? :password : :text,
+                          value: "", autocomplete: "off",
+                          required: item.new_record?,
+                          placeholder: item.persisted? ? t("snaptrade2.unchanged") : nil %>
+    <% end %>
+    <%= form.submit t(item.persisted? ? "snaptrade2.update" : "snaptrade2.save") %>
+  <% end %>
+
+  <% items.each do |connection| %>
+    <div class="border-t border-primary pt-4 space-y-3">
+      <p class="text-sm font-medium text-primary"><%= connection.name %></p>
+      <div class="flex flex-wrap gap-2">
+        <%= render DS::Link.new(text: t("snaptrade2.accounts"), icon: "list", href: setup_accounts_snaptrade_item_path(connection), frame: "modal") %>
+        <%= render DS::Link.new(text: t("snaptrade2.connect"), icon: "external-link", href: connect_snaptrade_item_path(connection), frame: "_top") %>
+        <%= render DS::Button.new(text: t("snaptrade2.sync"), icon: "refresh-cw", href: sync_snaptrade_item_path(connection), method: :post, disabled: connection.syncing?) %>
+      </div>
+    </div>
+  <% end %>
+</div>

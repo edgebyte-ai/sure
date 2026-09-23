@@ -161,6 +161,51 @@ class SnaptradeAccountProcessorTest < ActiveSupport::TestCase
 
   # === /positions/all payload shape ===
 
+  test "moomoo keeps the API total and anchor despite incomplete same-currency holdings" do
+    @snaptrade_account.update!(
+      brokerage_name: "Moomoo",
+      currency: "USD",
+      current_balance: BigDecimal("100000"),
+      cash_balance: BigDecimal("1500"),
+      raw_holdings_payload: [
+        { "instrument" => { "kind" => "stock", "symbol" => "AAPL", "currency" => "USD" },
+          "units" => "10", "price" => "150", "currency" => "USD" }
+      ],
+      raw_activities_payload: []
+    )
+
+    SnaptradeAccount::Processor.new(@snaptrade_account).process
+
+    assert_equal BigDecimal("100000"), @account.reload.balance
+    assert_equal BigDecimal("100000"), @account.current_anchor_balance
+    assert_equal BigDecimal("1500"), @account.cash_balance
+    assert_equal BigDecimal("1500"), @account.holdings.sum(:amount)
+
+    Balance::Materializer.new(@account, strategy: :reverse).materialize_balances
+    assert_equal BigDecimal("100000"), @account.balances.find_by!(date: Date.current, currency: "USD").balance
+  end
+
+  test "moomoo accepts zero and negative API totals and falls back only when missing" do
+    @snaptrade_account.update!(
+      brokerage_name: "moomoo",
+      currency: "USD",
+      cash_balance: BigDecimal("-100"),
+      raw_holdings_payload: [
+        { "instrument" => { "kind" => "stock", "symbol" => "AAPL", "currency" => "USD" },
+          "units" => "10", "price" => "150", "currency" => "USD" }
+      ],
+      raw_activities_payload: []
+    )
+
+    [ [ 0, 0 ], [ -50, -50 ], [ nil, 1400 ] ].each do |api_total, expected|
+      @snaptrade_account.update!(current_balance: api_total)
+      SnaptradeAccount::Processor.new(@snaptrade_account).process
+      assert_equal expected, @account.reload.balance
+      assert_equal expected, @account.valuations.current_anchor.first.entry.amount
+      assert_equal BigDecimal("-100"), @account.cash_balance
+    end
+  end
+
   test "holdings processor creates holdings from a positions/all payload" do
     security = securities(:aapl)
 

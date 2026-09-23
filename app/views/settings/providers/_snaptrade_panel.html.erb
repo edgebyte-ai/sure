@@ -7,7 +7,7 @@
   <% end %>
 
   <%
-    items = local_assigns[:snaptrade_items] || @snaptrade_items || Current.family.snaptrade_items.active.ordered
+    items = local_assigns[:snaptrade_items] || @snaptrade_items || Current.family.snaptrade_items.active.oauth_connections.ordered
     snaptrade_item = items.reject(&:scheduled_for_deletion?).first
     oauth_env_configured = Provider::Snaptrade.oauth_configured?
     redirect_flow_available = Provider::Snaptrade.authorization_code_configured?
